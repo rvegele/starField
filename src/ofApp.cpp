@@ -1,6 +1,24 @@
 #include "ofApp.h"
 #include <random>
 
+#include <sys/stat.h>
+
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+//#include <errno.h>
+//#include <fcntl.h>
+//#include <unistd.h>
+//#include <sys/ioctl.h>
+//#include <sys/mman.h>
+//#include <sys/types.h>
+//#include <time.h>
+
+// random stuff
+std::random_device rd;
+std::mt19937 e2(rd());
+std::normal_distribution<float> dist(0.40, 0.15);
+
 void ofApp::setup() {
     
     ofSetFrameRate(60);
@@ -8,14 +26,11 @@ void ofApp::setup() {
     ofDisableArbTex(); // GL_REPEAT for texture wrap only works with NON-ARB textures //
     
     ofLoadImage(texture,"/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/star.png");
-    //ofLoadImage(texture, "star.png");
-    
     shader.load("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/shader.vert", "/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/shader.frag");
-    
     shaderGlow.load("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/shaderGlow.vert", "/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/shaderGlow.frag");
     
     //ofLoadImage(milkyTex, "/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/milkyWay2.jpg");
-    milkyWay.load("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/milkyWay2.jpg");
+     milkyWay.load("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/milkyWay2.jpg");
     
      spectrumImage.load("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/spectrum2.png");
      star2Image.load("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/star.png");
@@ -27,53 +42,23 @@ void ofApp::setup() {
     //icoSphere.setRadius( 195000.0f );
     
     icoSphere.setRadius( 5000 );
-    //icoSphere.setRadius( 50000 );
-    
     icoSphere.setPosition(0.0, 0.0, 0.0);
-    
-    //100000 clip
-    
     icoSphere.setResolution(4);
     //icoSphere.rotate(50, ofVec3f(0.0, 1.0, 0.0));
     icoSphere.rotate(110, ofVec3f(0.0, 0.0, 1.0));
     icoSphere.rotate(-40, ofVec3f(1.0, 0.0, 0.0));
+
     
-    //welcome.loadSound("sounds/welcome.wav");
-    //welcome.setVolume(0.1);
-    //woosh.loadSound("sounds/woosh.wav");
-    //woosh.setVolume(1.5);
-    
-    //woosh.setVolume(0);
-    //woosh.setLoop(true);
-    //woosh.play();
-    
-//#ifdef USE_KINECT
-//    kinect.init();
-//    kinect.open();
-//#else
-//    kinectPlayer.loadMovie("kinect_depth.mov");
-//    kinectPlayer.play();
-//    videoTempImg.allocate(CAM_WIDTH, CAM_HEIGHT, OF_IMAGE_COLOR);
-//#endif
-    
-//    depthImage.allocate(CAM_WIDTH, CAM_HEIGHT);
-//    thresholdImage.allocate(CAM_WIDTH, CAM_HEIGHT);
+    dataImport();
     
     initDefaults();
+    initGui();
     
-//    depthDebugDraw.addLayer(depthImage);
-//    depthDebugDraw.addLayer(roi);
     
-//    thresholdDebugDraw.addLayer(thresholdImage);
-//    thresholdDebugDraw.addLayer(contourFinder);
-//    thresholdDebugDraw.addLayer(roi);
-    
-//    initGui();
-    
-//#ifndef DEBUG
-//    ofHideCursor();
-//    ofSetFullscreen(true);
-//#endif
+#ifndef DEBUG
+    ofHideCursor();
+    ofSetFullscreen(true);
+#endif
     
     initFBOs();
     
@@ -83,7 +68,55 @@ void ofApp::setup() {
     // listen on the given port
     cout << "listening for osc messages on port " << PORT << "\n";
     receiver.setup(PORT);
-    filter = 0;
+//    filter = 0;
+}
+
+void ofApp::initGui() {
+    
+    gui.setup();
+    //gui.add(starSize.set("starSize", starSize, 1.0f, 30000.0f));
+    gui.add(speed.set("speed", speed, 1.0f, 30000.f));
+    gui.add(galaxySize.set("galaxySize", galaxySize, 320, 15000.f));
+    gui.add(numStars.set("numStars", numStars, 250, 2000.f));
+
+    gui.add(appearClose.set("appearClose", appearClose, -20000, 50000));
+    gui.add(appearFar.set("appearFar", appearFar, 0, 100000));
+    
+}
+void ofApp::dataImport() {
+    // DATA FILE
+    int i;
+    int fd;
+    
+    fd = open("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/random_names.csv", O_RDONLY);
+    //fd = open(file, O_RDONLY);
+    char *map;  /* mmapped array of int's */
+    
+    struct stat buffer;
+    int status = fstat(fd, &buffer);
+    
+    cout << "number of data items in file: " << buffer.st_size/sizeof(char) << "\n";
+    if (fd == -1) {
+        perror("Error opening file for reading");
+        exit();
+        //exit(EXIT_FAILURE);
+    }
+    
+    map = (char*) mmap(NULL, buffer.st_size/sizeof(char), PROT_READ, MAP_SHARED, fd, 0);
+    i = 0;
+    int count = 0;
+    while(map[i]) {
+        if(map[i] == '\n') {
+            count++;
+        }
+        i++;
+    }
+    cout << "lines: " << count << "\n";
+    
+    parseData("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/random_names.csv");
+    
+    cout << "number of names: " << mStars.size() << std::endl;
+    //cout << mStars.at(0).mName << "\n";
 }
 
 void ofApp::initFBOs()
@@ -108,16 +141,7 @@ void ofApp::initFBOs()
 
 void ofApp::initDefaults()
 {
-    bAnaglyph = false;
-    threshold = 120;
-    avgDepth = 0;
-    avgDepthSmoothed = 0;
-    blobSizeMin = 0;
     cameraZ = 0;
-    kinectAngle = prevKinectAngle = 0;
-    
-    soundReqSpeedsAmps = 1.0f;
-    bUserFound = 0;
     bGoingForward = false;
     
     blue[0] = 0;
@@ -129,23 +153,56 @@ void ofApp::initDefaults()
     red[1] = 0;
     red[2] = 0;
     red[3] = 255;
-    cameraEyesOffset = 4.0;
     
+    cameraEyesOffset = 4.0;
     offSetX = 0.53;
     offSetY = 0.5;
+    
     starSize = 64.0;
     
     speed = 4000;
     numStars = 1000;
-    //numStars = 1000;
-    
     galaxySize = 10000;
-    //galaxySize = 10000;
+    appearClose = -10000;
+    appearFar = 70000;
     
     currPosMin = currPosMin = 0;
     currSpeed = currSpeedMax = 0;
     
     eyeSep = 1;
+    
+    namesMesh.getVertices().resize(numStars);
+    namesMesh.getColors().resize(numStars);
+    namesMesh.getNormals().resize(numStars,ofVec3f(0));
+    
+    // from 0 to <1000>
+    for (int i=points.size(); i < numStars; i++) {
+        
+        //global star iterator pradedam nuo 0 ir data imam is failo,
+        //o tada kai maximumas resetinam iki 0;
+        
+        // star initial position //
+        ofPoint p = ofPoint(ofRandom(-galaxySize, galaxySize), ofRandom(-galaxySize, galaxySize), /*ofRandom(-70000,10000));*/
+                    cameraZ - ofRandom(appearClose, appearFar));
+                    //cameraZ - 100000);
+        points.push_back(p);
+        
+        namesMesh.getVertices()[i].set(p.x, p.y, p.z);
+        //sizes.push_back(cameraZ-p.z);
+        
+        //cout << dist(e2) << "\n";
+        
+        // manual version
+        //float sSize = (float)random_normal();
+        //sSize = ofClamp(sSize, -1.0, 1.0);
+        //sSize = ofMap(sSize, -1.0, 1.0, 0.0, 1.0);
+        
+        // auto version
+        float sSize = dist(e2);
+        sSize = ofClamp(sSize, 0.0, 1.0); //cout << sSize << "\n";
+        starSizes.push_back(sSize);
+    }
+    
 }
 
 void ofApp::mouseScrolled(int x, int y, float scrollX, float scrollY ) {
@@ -158,12 +215,6 @@ void ofApp::update() {
     // OSC
     checkOSC();
 
-    //bool isFrameNew = false;
-    //float delta = (avgDepth-avgDepthSmoothed)*0.15;
-    //avgDepthSmoothed += delta;
-    
-    //float delta = 0.01;
-    
     delta *= 0.05; //cout << delta << "\n";
     currSpeed += ( delta - currSpeed ) * 0.15;
     
@@ -171,9 +222,6 @@ void ofApp::update() {
     icoSphere.rotate(delta, ofVec3f(0.0, 1.0, 0.0));
     
     if(currSpeed > currSpeedMax) currSpeedMax = currSpeed;
-    //if(avgDepthSmoothed < currPosMin) currPosMin = avgDepthSmoothed;
-    //if(avgDepthSmoothed > currPosMax) currPosMax = avgDepthSmoothed;
-    
     cameraZ += -currSpeed * (currSpeed>0?2:1) * speed;
     
     
@@ -194,27 +242,42 @@ void ofApp::update() {
     */
     
     //cout << cameraZ << "\n";
+    //for (int i = points.size()-1; i > 0; i--) {
+    // this one works
     for (int i = 0; i < points.size(); i++) {
         /*if( points[i].z > 10000) {*/
-        if (points[i].z > cameraZ + 10000) {
+        if (points[i].z > cameraZ/* + 10000*/) {       // uncomments if planning to go backwards!
+            namesMesh.removeVertex(i);
+            //namesMesh.getVertices()[i].set(0.0, 0.0, 0.0);
+            //namesMesh.getVertex(i);
+            
             points.erase(points.begin()+i);            // erase the point
-            sizes.erase(sizes.begin()+i);              // erase the point size
+            //sizes.erase(sizes.begin()+i);              // erase the point size
             starSizes.erase(starSizes.begin()+i);
+            
             i--;
         }
     }
     
     ofPoint p;
+    /*
     // random stuff
     std::random_device rd;
     std::mt19937 e2(rd());
     std::normal_distribution<float> dist(0.40, 0.15);
+    */
     
-    for (int i=points.size(); i < 1000; i++) {
-        p = ofPoint(ofRandom(-galaxySize, galaxySize), ofRandom(-galaxySize, galaxySize), /*ofRandom(-70000,10000));*/cameraZ-ofRandom(-10000, 70000));
-        
+    for (int i=points.size(); i < numStars; i++) {
+        p = ofPoint(ofRandom(-galaxySize, galaxySize), ofRandom(-galaxySize, galaxySize), /*ofRandom(-70000,10000));*/
+                    //cameraZ - ofRandom(-10000, 70000));
+                    cameraZ - ofRandom(appearClose, appearFar)); // 20000 - 70000
         points.push_back(p);
-        sizes.push_back(cameraZ-p.z);
+        namesMesh.addVertex(ofVec3f(p.x, p.y, p.z));
+        //namesMesh.getVertices()[i].set(p.x, p.y, p.z);
+    
+        //namesMesh.getVbo().setAttributeData(shader.getLocation("circlePosition"), posVector.data(), 3, posVector.size());
+        //circleMesh.setAttributeDivisor(shader.getLocation("circlePosition"),1); // this tells that the circlePosition attribute is passed once per instance instead of once per vertex
+        //sizes.push_back(cameraZ-p.z);
         
         //cout << dist(e2) << "\n";
         
@@ -225,16 +288,16 @@ void ofApp::update() {
         
         // auto version
         float sSize = dist(e2);
-              sSize = ofClamp(sSize, 0.0, 1.0);
-        
-        //cout << sSize << "\n";
+              sSize = ofClamp(sSize, 0.0, 1.0); //cout << sSize << "\n";
         starSizes.push_back(sSize);
     }
-    
     int total = (int)points.size();
     //cout << total << "\n";
+   
     vbo.setVertexData(&points[0], total, GL_DYNAMIC_DRAW);
-
+    namesMesh.setUsage( GL_DYNAMIC_DRAW );
+    namesMesh.setMode(OF_PRIMITIVE_POINTS);
+    
     //ofVec3f myCamGlobalPosition = camera.getGlobalPosition();
     //ofQuaternion myCamRotation = camera.getGlobalOrientation();
     //cout <<myCamRotation << "\n";
@@ -384,23 +447,10 @@ void ofApp::draw() {
     
     rightEyeFBO.begin();
     ofClear(0, 0, 0, 0);
-    
-        //ofSetColor(255, 255, 255, 255);
-
-        //ofEnablePointSprites();
-        
-        //ofPushMatrix();
-    
-        //camera.begin(offSetX, offSetY);
-    
     ofEnableBlendMode(OF_BLENDMODE_ADD);
-        //
-    //for (int u = 0; u < (int)points.size()-1; u++) {
     
-    
+            // BEGIN STAR GLOW SHADER
             shaderGlow.begin();
-            //shader.begin();
-    
             ofSetColor(ofColor(0.0, 0.0, 0.0, 255.0));
     
             camera.setPosition(0, 0, cameraZ);
@@ -410,7 +460,6 @@ void ofApp::draw() {
             shaderGlow.setUniformTexture("tex1", spectrumImage.getTexture(), 1);
             shaderGlow.setUniformTexture("tex2", starGlowImage.getTexture(), 2);
     
-            // double up :)
             for (int u = 0; u < (int)points.size()-1; u++) {
                 shaderGlow.setUniform1f("starSize", starSizes[u]);
                 shaderGlow.setUniform1f("time", (float)ofGetElapsedTimef() );
@@ -418,12 +467,12 @@ void ofApp::draw() {
                 vbo.draw(GL_POINTS, u, 1);
                 //vbo.draw(GL_POINTS, 0, (int)points.size());
             }
-            // double up end
             camera.end();
             shaderGlow.end();
             texture.unbind();
+            // END STAR GLOW SHADER
     
-            // INSIDE STAR SHADER
+            // BEGIN INSIDE STAR SHADER
             shader.begin();
             ofSetColor(ofColor(0.0, 0.0, 0.0, 255.0));
             camera.setPosition(0, 0, cameraZ);
@@ -440,34 +489,97 @@ void ofApp::draw() {
                 //glPointSize(starSizes[u]);
                 vbo.draw(GL_POINTS, u, 1);
                 //vbo.draw(GL_POINTS, 0, (int)points.size());
+                
+                //drawNames(ofVec2f(points[u].x, points[u].y), ofVec2f(ofGetMouseX(), ofGetMouseY()));
             }
-    
             texture.unbind();
             camera.end();
             shader.end();
     
     
+            // END INSIDE STAR SHADER
+    
+    
+            // cycle through all the stars
+            // assign star names to stars in range z value
+            // if run out of star names, go to the beginning of the star name list
+    
             // DRAW NAMES
-            //if( power < 0.5f ){
-            //    gl::enableAlphaBlending();
-            //} else {
-            //    gl::enableAdditiveBlending();
+            camera.begin();
+            camera.setPosition(0, 0, cameraZ);
+            //ofSetColor(ofColor::red);
+            //glPointSize(15);
+            //namesMesh.drawVertices();
+            //namesMesh.draw();
+            camera.end();
+            // DRAW NAMES END
+            int n = namesMesh.getNumVertices();
+            float nearestDistance = 0;
+            ofVec2f nearestVertex;
+            int nearestIndex = 0;
+    
+            ofVec2f mouse(mouseX, mouseY);
+            for(int i = 0; i < n; i++) {
+                ofVec3f cur = camera.worldToScreen(namesMesh.getVertex(i));
+                float distance = cur.distance(ofVec2f(mouse));
+                if(i == 0 || distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestVertex = cur;
+            nearestIndex = i;
+                }
+            }
+    
+    ofSetColor(ofColor::gray);
+    ofDrawLine(nearestVertex, mouse);
+    
+    ofNoFill();
+    ofSetColor(ofColor::yellow);
+    ofSetLineWidth(2);
+    ofDrawCircle(nearestVertex, 4);
+    ofSetLineWidth(1);
+    
+    ofVec2f offset(10, -10);
+    ofDrawBitmapStringHighlight(ofToString(nearestIndex), mouse + offset);
+            // DRAW NAMES CONTINUED
+    
+    
+    //int n = namesMesh.getNumVertices();
+        //cout << n << "\n";
+    
+    
+    
+    //cout << vbo.positionAttribute << "\n";
+
+        //cout << n << "\n";
+        //   cout <<  vbo.getTexCoordId() << "\n";
+            //for(int i = 0; i < n; i++) {
+                //camera.worldToScreen(asd);
+                //ofVec3f cur = camera.worldToScreen(vbo.get(i));
+            //    ofVec3f cur = camera.worldToScreen(vbo(i).x);
+            //
+            //    float distance = cur.distance(mouse);
+            //    if(i == 0 || distance < nearestDistance) {
+            //        nearestDistance = distance;
+            //        nearestVertex = cur;
+            //        nearestIndex = i;
+            //    }
             //}
-    
-            //gl::setMatricesWindow( getWindowSize(), true );
-    
             //for (int u = 0; u < (int)points.size()-1; u++) {
-            //BOOST_FOREACH( Star* &s, mNamedStars ){
-            //    s->drawName( mMousePos, power * mScalePer, math<float>::max( sqrt( mScalePer ) - 0.1f, 0.0f ) );
+            //    ofSetColor(255, 0, 0);
+            //    ofDrawCircle(ofPoint(points[u].x, points[u].y), 10.0);
+                //glPointSize(20.0);
+                //vbo.draw(GL_POINTS, u, 10);
+                //drawNames(ofVec2f(points[u].x, points[u].y), ofVec2f(ofGetMouseX(), ofGetMouseY()));
             //}
-            //}
+    
+    
     
         ofDisableBlendMode();
         //ofPopMatrix();
         ofDisablePointSprites();
         ofDisableAlphaBlending();
     
-    rightEyeFBO.end();
+        rightEyeFBO.end();
     
            /* */
     
@@ -480,14 +592,11 @@ void ofApp::draw() {
     //cout << leftEyeFBO.getWidth() << "\n";
     ofDisableAlphaBlending();
     ofSetColor(255, 255, 255);
+    gui.draw();
 }
 
 void ofApp::exit() {
-    
-//#ifdef USE_KINECT
-//    kinect.setCameraTiltAngle(0); // zero the tilt on exit
-//    kinect.close();
-//#endif
+
 }
 
 void ofApp::mouseReleased(int x, int y, int button) {
@@ -659,5 +768,151 @@ void ofApp::checkOSC() {
          }*/
         
     }
+}
+
+void ofApp::drawNames(const ofVec2f &nearestVertex, const ofVec2f &mousePos) {
+//    ofSetColor(ofColor::gray);
+//    ofDrawLine(nearestVertex, mousePos);
+//    ofNoFill();
+//    ofSetColor(ofColor::yellow);
+//    ofSetLineWidth(2);
+//    ofDrawCircle(nearestVertex, 4);
+//    ofSetLineWidth(1);
+//    ofVec2f offset(10, -10);
+//    ofDrawBitmapStringHighlight(ofToString("aga"), ofPoint(ofGetMouseX(), ofGetMouseY()));
+    
+    // DRAW NAMES
+    //if( mRenderNames ){
+    //    if( power < 0.5f ){
+    //        gl::enableAlphaBlending();
+    //    } else {
+    //        gl::enableAdditiveBlending();
+    //    }
+    /*    gl::setMatricesWindow( getWindowSize(), true );
+        
+        BOOST_FOREACH( Star* &s, mNamedStars ){
+            s->drawName( mMousePos, power * mScalePer, math<float>::max( sqrt( mScalePer ) - 0.1f, 0.0f ) );
+        }*/
+    //}
+
+}
+
+void ofApp::parseData( const string &path ) {
+    
+    string line;
+    
+    ofBuffer file = ofBufferFromFile(path);
+    int i = 0;
+    ofBuffer::Lines lines = file.getLines();
+    
+    for (const std::string& line : lines) {
+        //std::cout << "LINE: " << line << std::endl;
+        //if (i < 250) {
+        createStar( line, i );
+        ++i;
+        //cout << line << "\n";
+        //}
+    }
+    file.clear();
+    
+    
+    //while( !myfile.eof() ){
+    //    std::getline( myfile, line );
+    //    createStar( line, i );
+    //    ++i;
+    //}
+    
+    //myfile.close();
+    //} else std::cout << "Unable to open file";
+}
+
+void ofApp::createStar( const string &text, int lineNumber ) {
+    
+    int index = 0;
+    int id;
+    //float rad;
+    //int type, subType;
+    //string greekLetter;
+    string name;
+    //string regDate;
+    //float xPos, yPos, zPos;
+    //float appMag, absMag;
+    //float colIndex;
+    //std::string name;
+    //std::string spectrum;
+    //0   1       2     3        4            5     6               7     8     9
+    //id, radius, type, subType, greekLetter, name, registeredDate, xPos, yPos, zPos
+    if (lineNumber > 0) { // exclude the 1st ite which is decription
+        vector<string> splitItems = ofSplitString(text, ",");
+        for(auto i = splitItems.begin(); i != splitItems.end(); ++i) {
+            //std::cout << *i << ' ';
+            
+            if( index == 0 ){
+                id = ofToInt(*i);
+            } else if( index == 1 ){
+                if ( (*i).length() > 1 ) { name = (*i); } else { name = ""; }
+            }
+            /*} else if( index == 3 ){
+                subType = ofToInt(*i);
+            } else if( index == 4 ){
+                greekLetter = (*i);
+            } else if( index == 5 ){
+                if ( (*i).length() > 1 ) { name = (*i); } else { name = ""; }
+            } else if( index == 6 ){
+                regDate = (*i);
+            } else if( index == 7 ){
+                xPos = ofToFloat(*i);
+            } else if( index == 8 ){
+                yPos = ofToFloat(*i);
+            } else if( index == 9 ){
+                zPos = ofToFloat(*i);
+            }*/
+            index ++;
+        }
+        cout << id << " | " << name << "\n";
+        //cout << rad << " " << type << " " << subType << " " << greekLetter << " " << name << " " << regDate << " " << xPos << " " << yPos << " " << zPos << "\n";
+        
+        // ofVec3f pos = ofVec3f( xPos, yPos, zPos );
+        // THIS FEELS WRONG. ASK ABOUT THE RIGHT WAY TO DO THIS.
+        Star star ( id , name );
+            //Star star (pos, rad, type, subType, greekLetter, name, regDate);
+        mStars.push_back( star );
+    }
+    
+    //if( appMag < 6.0f || name.length() > 1 ){
+    //mBrightStars.push_back( star );
+    //} else {
+    //mFaintStars.push_back( star );
+    //}
+    
+    //if( name.length() > 1 ){
+    //mNamedStars.push_back( star );
+    
+    //if( name == "Sol" || name == "Sirius" || name == "Vega" || name == "Gliese 581" ){
+    //mTouringStars.push_back( star );
+    //std::cout << "ADDED TOURING STAR: " << star->mName << " " << star->mPos << std::endl;
+    // }
+    //}
+    // }
+    
+    
+    
+    
+    /* this part works */
+    
+    //ofBuffer buff = ofBufferFromFile("star_data/MOCK_DATA.csv");
+    
+    //for(auto line: buff.getLines()){
+    //    vector<string> splitItems = ofSplitString(line, ",");
+    //    for(auto i = splitItems.begin(); i != splitItems.end(); ++i) {
+    //        std::cout << *i << ' ';
+    //    }
+    //    cout << "\n";
+    //    for (vector<string>::const_iterator i = splitItems.begin(); i != splitItems.end(); ++i) {
+    //    std::cout << *i << ' ';
+    //    }
+    //}
+    
+    /* this part works end */
 }
 
