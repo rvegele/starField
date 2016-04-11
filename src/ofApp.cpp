@@ -69,6 +69,8 @@ void ofApp::setup() {
     cout << "listening for osc messages on port " << PORT << "\n";
     receiver.setup(PORT);
 //    filter = 0;
+    
+    nameIterator = 0;
 }
 
 void ofApp::initGui() {
@@ -188,6 +190,11 @@ void ofApp::initDefaults()
         points.push_back(p);
         
         namesMesh.getVertices()[i].set(p.x, p.y, p.z);
+        
+        namePlaceholder.push_back(mStars[i].mName);
+        mStars[i].mIsSelected = true;
+        //mStars(nameIterator).setPosition(p.x ,p.y, p.z);
+        
         //sizes.push_back(cameraZ-p.z);
         
         //cout << dist(e2) << "\n";
@@ -201,6 +208,7 @@ void ofApp::initDefaults()
         float sSize = dist(e2);
         sSize = ofClamp(sSize, 0.0, 1.0); //cout << sSize << "\n";
         starSizes.push_back(sSize);
+        nameIterator++;
     }
     
 }
@@ -251,10 +259,12 @@ void ofApp::update() {
             //namesMesh.getVertices()[i].set(0.0, 0.0, 0.0);
             //namesMesh.getVertex(i);
             
+            mStars[i].mIsSelected = false;
+            namePlaceholder.erase(namePlaceholder.begin()+i);
+            
             points.erase(points.begin()+i);            // erase the point
             //sizes.erase(sizes.begin()+i);              // erase the point size
             starSizes.erase(starSizes.begin()+i);
-            
             i--;
         }
     }
@@ -268,10 +278,22 @@ void ofApp::update() {
     */
     
     for (int i=points.size(); i < numStars; i++) {
+        
+        //if (nameIterator > MAX_NAMES ) {
+        //    nameIterator = 0;
+        //}
+        
         p = ofPoint(ofRandom(-galaxySize, galaxySize), ofRandom(-galaxySize, galaxySize), /*ofRandom(-70000,10000));*/
                     //cameraZ - ofRandom(-10000, 70000));
                     cameraZ - ofRandom(appearClose, appearFar)); // 20000 - 70000
         points.push_back(p);
+        
+        for (int z = 0; z < numStars; z++ ) {
+            if (mStars[z].mIsSelected == false) {
+                namePlaceholder.push_back(mStars[z].mName);
+            }
+        }
+        
         namesMesh.addVertex(ofVec3f(p.x, p.y, p.z));
         //namesMesh.getVertices()[i].set(p.x, p.y, p.z);
     
@@ -290,6 +312,8 @@ void ofApp::update() {
         float sSize = dist(e2);
               sSize = ofClamp(sSize, 0.0, 1.0); //cout << sSize << "\n";
         starSizes.push_back(sSize);
+        
+        nameIterator++;
     }
     int total = (int)points.size();
     //cout << total << "\n";
@@ -322,7 +346,7 @@ void ofApp::draw() {
     //icoSphere.rotate(0.005, ofVec3f(0.0, 1.0, 0.0));
     ofClear(0, 0, 0, 0);
     //ofPushMatrix();
-        camera.setPosition(0, 0, 0);
+    camera.setPosition(0.0f, 0.0f, 0.0f);
         camera.begin();
     //icoSphere.set(10, 2);
     // DRAW MILKYWAY
@@ -454,6 +478,7 @@ void ofApp::draw() {
             ofSetColor(ofColor(0.0, 0.0, 0.0, 255.0));
     
             camera.setPosition(0, 0, cameraZ);
+    
             camera.begin();
     
             shaderGlow.setUniformTexture("tex0", star2Image.getTexture(), 0);
@@ -513,21 +538,49 @@ void ofApp::draw() {
             //namesMesh.draw();
             camera.end();
             // DRAW NAMES END
-            int n = namesMesh.getNumVertices();
-            float nearestDistance = 0;
-            ofVec2f nearestVertex;
-            int nearestIndex = 0;
     
-            ofVec2f mouse(mouseX, mouseY);
+
+            int n = namesMesh.getNumVertices();
+    
+            //cout << cameraZ  << "| |" << namesMesh.getVertex(1).z << "\n";
+    
+            //cout << dist << "\n";
+            for (int i = 0; i < n; i ++ ) {
+                float dist = abs(cameraZ) +  namesMesh.getVertex(i).z;
+                if (dist > -15000) {
+                    ofSetColor(ofColor::gray);
+                    ofVec3f cur = camera.worldToScreen(namesMesh.getVertex(i));
+                    //ofDrawLine(cur, mouse);
+                    ofNoFill();
+                    if (dist < -3000) {
+                        ofSetColor(255, 0, 255, ofMap(dist, -15000, -3000, 0.0, 255));
+                    } else {
+                        ofSetColor(255, 0, 255, 255);
+                    }
+                    ofSetLineWidth(2);
+                    ofDrawCircle(cur, 10);
+                    ofSetLineWidth(1);
+                    ofVec2f offset(10, -10);
+                    
+                    ofDrawBitmapStringHighlight(namePlaceholder[i], ofPoint(cur.x+25,cur.y-25));
+                    //ofDrawBitmapStringHighlight(ofToString(i), ofPoint(cur.x+25,cur.y-25));
+                }
+            }
+    //cout <<namesMesh.getVertex(1) << "\n";
+    
+    //            float distance = cur.distance(camera.getGlobalPosition());
+                //cout << dist << "\n";
+            //}
+/*
             for(int i = 0; i < n; i++) {
                 ofVec3f cur = camera.worldToScreen(namesMesh.getVertex(i));
-                float distance = cur.distance(ofVec2f(mouse));
-                if(i == 0 || distance < nearestDistance) {
+        float distance = cur.distance(ofVec2f(mouse));
+        if(i == 0 || distance < nearestDistance) {
             nearestDistance = distance;
             nearestVertex = cur;
             nearestIndex = i;
-                }
-            }
+        }
+    }
     
     ofSetColor(ofColor::gray);
     ofDrawLine(nearestVertex, mouse);
@@ -540,6 +593,7 @@ void ofApp::draw() {
     
     ofVec2f offset(10, -10);
     ofDrawBitmapStringHighlight(ofToString(nearestIndex), mouse + offset);
+ */
             // DRAW NAMES CONTINUED
     
     

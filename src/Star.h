@@ -15,7 +15,7 @@ public:
     
     void update( const ofCamera &cam, float scale );
     void drawName( const ofVec2f &mousePos);
-    
+    void setPos ( );
     
     ofVec3f mInitPos;
     ofVec3f mPos;

@@ -4,6 +4,7 @@ Star::Star( int ID, string name )/* : mPos( pos ), mApparentMag( appMag ), mAbso
     
     mID = ID;
     mName = name;
+    mIsSelected = false;
     
     //mInitPos		= mPos;
     mDistToMouse	= 1000.0f;
@@ -67,15 +68,16 @@ void Star::update( const ofCamera &cam, float scale ) {
     //mDistToCamPer	= math<float>::min( mDistToCam * 0.01f, 1.0f );
     //mScreenRadius	= cam.getScreenRadius( mSphere, app::getWindowWidth(), app::getWindowHeight() );
 }
-/*
-void Star::drawName( const ofVec2f &mousePos )
+
+void Star::drawName( const ofVec2f &pos )
 {
-    
+    ofDrawBitmapStringHighlight(mName, ofPoint(pos.x,pos.y));
+ /*
      if( mDistToCam > 0.0f && mNameTex ){
      float per = constrain( 1.0f - mDistToCam * 0.0000375f, 0.0f, 1.0f );
      per *= per * per;
      
-     Vec2f dirToMouse	= mScreenPos - mousePos;
+     ofVec2f dirToMouse	= mScreenPos - mousePos;
      mDistToMouse		= dirToMouse.length();
      
      if( mDistToMouse < 40.0f )
@@ -85,6 +87,7 @@ void Star::drawName( const ofVec2f &mousePos )
      per = 1.0f;
      
      if( per > 0.05f ){
+         
      gl::color( ColorA( power, power, power, per * alpha ) );
      mNameTex.enableAndBind();
      gl::draw( mNameTex, mScreenPos + Vec2f( mScreenRadius + 35.0f, -28.0f ) );
@@ -98,5 +101,6 @@ void Star::drawName( const ofVec2f &mousePos )
      gl::drawLine( p2, p3 );
      }
      }
-     */
-//}
+  */
+}
+  

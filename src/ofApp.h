@@ -121,6 +121,7 @@ protected:
     //void drawNames( const ofVec2f &mousePos, float power, float alpha );
     
     ofVboMesh namesMesh;
-    ofVec3f namesCoords[];
+    int nameIterator;
+    vector<string> namePlaceholder;
     
 };
