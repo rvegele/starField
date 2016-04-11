@@ -123,5 +123,7 @@ protected:
     ofVboMesh namesMesh;
     int nameIterator;
     vector<string> namePlaceholder;
+    ofTrueTypeFont	gothamBook;
+    ofTrueTypeFont	gothamLight;
     
 };

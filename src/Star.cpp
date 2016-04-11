@@ -1,9 +1,14 @@
 #include "star.h"
 
-Star::Star( int ID, string name )/* : mPos( pos ), mApparentMag( appMag ), mAbsoluteMag( absMag ), mColor( color ), mName( name )*/{
+Star::Star( int ID, string name, string greekLetter )/* : mPos( pos ), mApparentMag( appMag ), mAbsoluteMag( absMag ), mColor( color ), mName( name )*/{
     
     mID = ID;
-    mName = name;
+
+    mGreekLetter = greekLetter;
+    
+    mName = mGreekLetter;
+    //mName = mGreekLetter + " " + mName;
+    
     mIsSelected = false;
     
     //mInitPos		= mPos;

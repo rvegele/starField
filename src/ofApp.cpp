@@ -69,8 +69,18 @@ void ofApp::setup() {
     cout << "listening for osc messages on port " << PORT << "\n";
     receiver.setup(PORT);
 //    filter = 0;
-    
+   
     nameIterator = 0;
+    
+    ofTrueTypeFont::setGlobalDpi(72);
+    gothamBook.load("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/fonts/DINPro-Regular.otf",17, true, true);
+    gothamBook.setLineHeight(46.0f);
+    gothamBook.setLetterSpacing(1.037);
+    
+    gothamLight.load("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/fonts/Gotham-Light.otf",15, true, true);
+    gothamLight.setLineHeight(46.0f);
+    gothamLight.setLetterSpacing(1.037);
+
 }
 
 void ofApp::initGui() {
@@ -90,7 +100,7 @@ void ofApp::dataImport() {
     int i;
     int fd;
     
-    fd = open("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/random_names.csv", O_RDONLY);
+    fd = open("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/MOCK_DATA.csv", O_RDONLY);
     //fd = open(file, O_RDONLY);
     char *map;  /* mmapped array of int's */
     
@@ -115,7 +125,7 @@ void ofApp::dataImport() {
     }
     cout << "lines: " << count << "\n";
     
-    parseData("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/random_names.csv");
+    parseData("/Users/regi/Documents/of_v0.9.3_osx_release/apps/myApps/starField/data/MOCK_DATA.csv");
     
     cout << "number of names: " << mStars.size() << std::endl;
     //cout << mStars.at(0).mName << "\n";
@@ -162,11 +172,11 @@ void ofApp::initDefaults()
     
     starSize = 64.0;
     
-    speed = 4000;
-    numStars = 1000;
-    galaxySize = 10000;
-    appearClose = -10000;
-    appearFar = 70000;
+    speed = 4000; // 4000
+    numStars = 250; // 1000
+    galaxySize = 8000; // 10000
+    appearClose = 33000; // -10000
+    appearFar = 95000; // 70000
     
     currPosMin = currPosMin = 0;
     currSpeed = currSpeedMax = 0;
@@ -193,6 +203,7 @@ void ofApp::initDefaults()
         
         namePlaceholder.push_back(mStars[i].mName);
         mStars[i].mIsSelected = true;
+        
         //mStars(nameIterator).setPosition(p.x ,p.y, p.z);
         
         //sizes.push_back(cameraZ-p.z);
@@ -279,18 +290,15 @@ void ofApp::update() {
     
     for (int i=points.size(); i < numStars; i++) {
         
-        //if (nameIterator > MAX_NAMES ) {
-        //    nameIterator = 0;
-        //}
-        
         p = ofPoint(ofRandom(-galaxySize, galaxySize), ofRandom(-galaxySize, galaxySize), /*ofRandom(-70000,10000));*/
                     //cameraZ - ofRandom(-10000, 70000));
                     cameraZ - ofRandom(appearClose, appearFar)); // 20000 - 70000
         points.push_back(p);
         
-        for (int z = 0; z < numStars; z++ ) {
+        for (int z = mStars.size(); z > 0; z-- ) {
             if (mStars[z].mIsSelected == false) {
                 namePlaceholder.push_back(mStars[z].mName);
+                
             }
         }
         
@@ -537,11 +545,11 @@ void ofApp::draw() {
             //namesMesh.drawVertices();
             //namesMesh.draw();
             camera.end();
+    
+    
             // DRAW NAMES END
-    
-
+            ofEnableAlphaBlending();
             int n = namesMesh.getNumVertices();
-    
             //cout << cameraZ  << "| |" << namesMesh.getVertex(1).z << "\n";
     
             //cout << dist << "\n";
@@ -550,19 +558,33 @@ void ofApp::draw() {
                 if (dist > -15000) {
                     ofSetColor(ofColor::gray);
                     ofVec3f cur = camera.worldToScreen(namesMesh.getVertex(i));
-                    //ofDrawLine(cur, mouse);
                     ofNoFill();
-                    if (dist < -3000) {
-                        ofSetColor(255, 0, 255, ofMap(dist, -15000, -3000, 0.0, 255));
-                    } else {
-                        ofSetColor(255, 0, 255, 255);
-                    }
-                    ofSetLineWidth(2);
-                    ofDrawCircle(cur, 10);
-                    ofSetLineWidth(1);
-                    ofVec2f offset(10, -10);
                     
-                    ofDrawBitmapStringHighlight(namePlaceholder[i], ofPoint(cur.x+25,cur.y-25));
+                    //if (dist < -3000) {
+                    //    ofSetColor(255, 0, 255, ofMap(dist, -15000, -3000, 0.0, 255));
+                    //} else {
+                    //    ofSetColor(255, 0, 255, 255);
+                    //}
+                    //ofSetLineWidth(2);
+                    //ofDrawCircle(cur, 10);
+                    //ofSetLineWidth(1);
+                    //ofVec2f offset(10, -10);
+                    //ofDrawBitmapStringHighlight(namePlaceholder[i], ofPoint(cur.x+25,cur.y-25));
+                    
+                    ofSetLineWidth(1);
+                    if (dist < -5000) {
+                            ofSetColor(255, 255, 255, ofMap(dist, -18000, -5000, 0.0, 220));
+                        } else {
+                            ofSetColor(255, 255, 255, 220);
+                        }
+                    
+                    ofRectangle rect = gothamBook.getStringBoundingBox(namePlaceholder[i], 0,0);
+                    
+                    gothamBook.drawString(namePlaceholder[i], cur.x+79+130-rect.width, cur.y-50);
+                    
+                    ofDrawLine(cur.x, cur.y, cur.x+79, cur.y-46);
+                    ofDrawLine(cur.x+79, cur.y-46, cur.x+79+130, cur.y-46);
+
                     //ofDrawBitmapStringHighlight(ofToString(i), ofPoint(cur.x+25,cur.y-25));
                 }
             }
@@ -886,8 +908,10 @@ void ofApp::createStar( const string &text, int lineNumber ) {
     int id;
     //float rad;
     //int type, subType;
-    //string greekLetter;
+    
     string name;
+    string greekLetter;
+    
     //string regDate;
     //float xPos, yPos, zPos;
     //float appMag, absMag;
@@ -901,11 +925,14 @@ void ofApp::createStar( const string &text, int lineNumber ) {
         for(auto i = splitItems.begin(); i != splitItems.end(); ++i) {
             //std::cout << *i << ' ';
             
-            if( index == 0 ){
+            if( index == 0 ){ // ID
                 id = ofToInt(*i);
-            } else if( index == 1 ){
-                if ( (*i).length() > 1 ) { name = (*i); } else { name = ""; }
+            } else if ( index == 4) {
+                greekLetter = (*i);
+            } else if( index == 5 ){ // NAME
+                if ( (*i).length() > 1 ) { name = (*i);  } else { name = ""; }
             }
+            
             /*} else if( index == 3 ){
                 subType = ofToInt(*i);
             } else if( index == 4 ){
@@ -928,7 +955,7 @@ void ofApp::createStar( const string &text, int lineNumber ) {
         
         // ofVec3f pos = ofVec3f( xPos, yPos, zPos );
         // THIS FEELS WRONG. ASK ABOUT THE RIGHT WAY TO DO THIS.
-        Star star ( id , name );
+        Star star ( id , name, greekLetter );
             //Star star (pos, rad, type, subType, greekLetter, name, regDate);
         mStars.push_back( star );
     }

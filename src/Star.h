@@ -5,11 +5,12 @@
 class Star {
     
 public:
-    Star( int ID, string name );//), int type, int subType, string greekLetter, string name, string regDate );
+    Star( int ID, string name, string greekLetter );//), int type, int subType, string greekLetter, string name, string regDate );
     //Star( ofVec3f pos, float rad, int type, int subType, string greekLetter, string name, string regDate );
     
     int mID;
     string mName;
+    string mGreekLetter;
     
     float		mDistToMouse;
     
@@ -26,7 +27,7 @@ public:
     float		mScreenRadius;
     float		mDistToCam;
     float		mDistToCamPer;
-    string		mGreek;
+    
     ofTexture   mNameTex;
     float		mRadius;
     float		mRadiusMulti;
